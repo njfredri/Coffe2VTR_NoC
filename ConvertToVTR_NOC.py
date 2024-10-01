@@ -13,7 +13,8 @@ class COFFE2VTR_NOC:
         print('\tinputs: ' + str(pb['inputs']))
         print('\toutptus: ' + str(pb['outputs']))
         print('\tclocks: ' + str(pb['clocks']))
-        print('\tmodes: ' + str(pb['modes']))
+        print('\tnumber of modes (shortened for readability): ' + str(len(pb['modes'])))
+        print('\tnumber of pb_types (shortened for readability): ' + str(len(pb['pb_types'])))
         print('\tfc: ' + str(pb['fc']))
         print('\tpinlocations' + str(pb['pinlocations']))
         print('}')
@@ -39,21 +40,30 @@ class COFFE2VTR_NOC:
             if(debug):
                 print(pbinfo)
             #get input port data
-            pbinfo['inputs'] = COFFE2VTR_NOC.extractinputs(pb, debug=debug)
+            pbinfo['inputs'] = COFFE2VTR_NOC.extractinputs(pb, debug=False)
             if(debug):
                 print('\nAfter Inputs:')
                 COFFE2VTR_NOC.printPB(pbinfo)
             #get output port data
-            pbinfo['outputs'] = COFFE2VTR_NOC.extractoutputs(pb, debug=debug)
+            pbinfo['outputs'] = COFFE2VTR_NOC.extractoutputs(pb, debug=False)
             if(debug):
                 print('\nAfter Outputs:')
                 COFFE2VTR_NOC.printPB(pbinfo)
             #get clock data
-            pbinfo['clocks'] = COFFE2VTR_NOC.extractclocks(pb, debug=debug)
+            pbinfo['clocks'] = COFFE2VTR_NOC.extractclocks(pb, debug=False)
             if(debug):
                 print('\nAfter Clocks:')
                 COFFE2VTR_NOC.printPB(pbinfo)
-
+            #get modes
+            pbinfo['modes'] = COFFE2VTR_NOC.extractmodes(pb, debug=False)
+            if(debug):
+                print('\nAfter Modes:')
+                COFFE2VTR_NOC.printPB(pbinfo)
+            #get pbtypes
+            pbinfo['pb_types'] = COFFE2VTR_NOC.extractpb(pb, debug=False)
+            if(debug):
+                print('\nAfter Pb_types:')
+                COFFE2VTR_NOC.printPB(pbinfo)
 
     def extractinputs(pb, debug=False):
         inputs = []
@@ -95,13 +105,27 @@ class COFFE2VTR_NOC:
 
     def extractmodes(pb, debug=False):
         modes = []
-        for mode in pb.findall('modes'):
-            
-
+        for mode in pb.findall('mode'):
+            data = ET.tostring(mode, encoding='unicode', method='xml')
+            modes.append(data)
+        if debug:
+            print('\n modes:')
+            print(modes)
+        return modes
+    
+    def extractpb(pb, debug=False): #method to extract pb nested in the current pb. Saved as entire strings
+        pbs = []
+        for p in pb.findall('pb_type'):
+            data = ET.tostring(p, encoding='unicode', method='xml')
+            pbs.append(data)
+        if(debug):
+            print('\n pb_types:')
+            print(pbs)
+        return pbs
 
 if __name__=='__main__':
     print('starting')
-    xml_file_path = 'vpr_arch.xml'
+    xml_file_path = 'generated_arch.xml'
     tree = COFFE2VTR_NOC.read_xml(xml_file_path)
     # tree.write('output.xml', encoding='unicode')
     # with open('output.xml', 'r') as file:
