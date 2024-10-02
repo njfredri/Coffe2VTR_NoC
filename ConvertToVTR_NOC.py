@@ -19,10 +19,10 @@ class COFFE2VTR_NOC:
         print('\tpinlocations' + str(pb['pinlocations']))
         print('}')
     
-    def convertPB(archtree:ET, debug=False):
+    def extractComplexBlockInfo(archtree:ET, debug=False):
         root = archtree.getroot()
         complexblocks = root.find('complexblocklist')
-        
+        pbs = []
         for pb in complexblocks.findall('pb_type'):
             pbinfo = {
                 'name': pb.attrib.get('name'),
@@ -76,6 +76,8 @@ class COFFE2VTR_NOC:
             if(debug):
                 print('\nAfter pinlocations:')
                 COFFE2VTR_NOC.printPB(pbinfo)
+            pbs.append(pbinfo)
+        return pbs
 
     def extractinputs(pb, debug=False):
         inputs = []
@@ -164,6 +166,45 @@ class COFFE2VTR_NOC:
             return data
         return None
 
+    def writePB_Type(pb:dict, debug=False) -> str:
+        inputstr = COFFE2VTR_NOC.generateInputPBStr(pb['inputs'])
+        print(inputstr)
+        return ''
+
+    def generateInputPBStr(inputs: list, initial_indent=2) -> str: #input is a list of dictionaries
+        inputstrings = []
+        indent = initial_indent
+        i = 0
+        for input in inputs:
+            portstr = ''
+            portstr += '<input name="'
+            portstr += str(input['name'])
+            portstr += '" num_pins="'
+            portstr += str(input['num_pins'])
+            if input['equivalent'] is not None:
+                portstr += '" equivalent="'
+                portstr += str(input['equivalent'])
+                portstr += '"'
+                portstr += '/>'
+            else:
+                portstr += '"/>'
+            inputstrings.append(portstr)
+        
+        finalstring = ''
+        for portstr in inputstrings:
+            line = COFFE2VTR_NOC.addIndentAtBeginning(portstr, indent)
+            finalstring += line
+            finalstring += '\n'
+        return finalstring
+    
+    def addIndentAtBeginning(instring: str, indents: int) -> str:
+        outstring = ''
+        for i in range(0,indents):
+            outstring += '\t'
+        outstring = outstring + instring
+        return outstring
+
+
 if __name__=='__main__':
     print('starting')
     xml_file_path = 'generated_arch.xml'
@@ -171,4 +212,7 @@ if __name__=='__main__':
     # tree.write('output.xml', encoding='unicode')
     # with open('output.xml', 'r') as file:
     #     print(file.read())
-    COFFE2VTR_NOC.convertPB(tree, debug=True)
+    pbs = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
+    for pb in pbs:
+        # COFFE2VTR_NOC.printPB(pb)
+        COFFE2VTR_NOC.writePB_Type(pb)
