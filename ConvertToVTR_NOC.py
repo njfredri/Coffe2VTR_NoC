@@ -36,7 +36,7 @@ class COFFE2VTR_NOC:
                 'fc' : {},
                 'pinlocations' : {}
             }
-
+            debug = False
             if(debug):
                 print(pbinfo)
             #get input port data
@@ -63,6 +63,18 @@ class COFFE2VTR_NOC:
             pbinfo['pb_types'] = COFFE2VTR_NOC.extractpb(pb, debug=False)
             if(debug):
                 print('\nAfter Pb_types:')
+                COFFE2VTR_NOC.printPB(pbinfo)
+            #get fc #assume there is only one fc element per pb
+            pbinfo['fc'] = COFFE2VTR_NOC.extractfc(pb, debug=False)
+            # debug = True
+            if(debug):
+                print('\nAfter fc:')
+                COFFE2VTR_NOC.printPB(pbinfo)
+            #get pinlocation data
+            pbinfo['pinlocations'] = COFFE2VTR_NOC.extractpinlocations(pb, debug=False)
+            # debug=True
+            if(debug):
+                print('\nAfter pinlocations:')
                 COFFE2VTR_NOC.printPB(pbinfo)
 
     def extractinputs(pb, debug=False):
@@ -122,6 +134,35 @@ class COFFE2VTR_NOC:
             print('\n pb_types:')
             print(pbs)
         return pbs
+
+    def extractfc(pb, debug=False):
+        fc = pb.find('fc')
+        # print(ET.tostring(fc, encoding='unicode'))
+        if fc is not None:
+            data = {
+                'default_in_type': fc.attrib.get('default_in_type'),
+                'default_in_val' : float(fc.attrib.get('default_in_val')),
+                'default_out_type' : fc.attrib.get('default_out_type'),
+                'default_out_val' : float(fc.attrib.get('default_out_val'))
+            }
+            return data
+        return None
+
+    def extractpinlocations(pb, debug=False):
+        pl = pb.find('pinlocations')
+        data = {}
+        if pl is not None:
+            data['pattern'] = pl.attrib.get('pattern')
+            data['locations'] = [] #locations is a list of dictionaries
+            if data['pattern'] == 'custom':
+                for loc in pl.findall('loc'):
+                    locdata = {
+                        'side' : loc.attrib.get('side'),
+                        'pins' : loc.text.strip().split() #should return all the pins as a list
+                    }
+                    data['locations'].append(locdata)
+            return data
+        return None
 
 if __name__=='__main__':
     print('starting')
