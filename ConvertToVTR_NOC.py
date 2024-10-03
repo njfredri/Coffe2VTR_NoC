@@ -1,4 +1,7 @@
 import xml.etree.ElementTree as ET
+
+#TODO: Check for port_class at the top level. It might be a mode/submodule thing
+
 class COFFE2VTR_NOC:
     def read_xml(xmlfile):
         tree = ET.parse(xmlfile)
@@ -112,7 +115,8 @@ class COFFE2VTR_NOC:
         for clock in pb.findall('clock'):
             data = {
                 'name' : clock.attrib.get('name'),
-                'num_pins' : clock.attrib.get('num_pins')
+                'num_pins' : clock.attrib.get('num_pins'),
+                'equivalent' : clock.attrib.get('equivalent')
             }
             clocks.append(data)
         return clocks
@@ -166,9 +170,41 @@ class COFFE2VTR_NOC:
             return data
         return None
 
+    def addIndentAtBeginning(instring: str, indents: int) -> str:
+        outstring = ''
+        for i in range(0,indents):
+            outstring += '\t'
+        outstring = outstring + instring
+        return outstring
+
+                # 'name': pb and tile
+                # 'capacity' : tile
+                # 'area' : tile
+                # 'inputs' : pb and tile
+                # 'outputs' : pb and tile
+                # 'clocks' : pb and tile
+                # 'modes' : pb
+                # 'pb_types': pb
+                # 'fc' : tile
+                # 'pinlocations' : tile
+                # equivalent on both tile and pb
+
     def writePB_Type(pb:dict, debug=False) -> str:
-        inputstr = COFFE2VTR_NOC.generateInputPBStr(pb['inputs'])
-        print(inputstr)
+        opennerstr = '\t\t<pb_type name="' + pb['name'] + '">'
+        closerstr = '\t\t</pb_type>'
+        inputstr = COFFE2VTR_NOC.generateInputPBStr(pb['inputs'], initial_indent=3)
+        outputstr = COFFE2VTR_NOC.generateOutputPBStr(pb['outputs'], initial_indent=3)
+        clockstr = COFFE2VTR_NOC.generateOutputPBStr(pb['clocks'], initial_indent=3)
+        modestr = COFFE2VTR_NOC.generateModesStr(pb['modes'])
+        if debug:
+            print('input str: ')
+            print(inputstr)
+            print('output str: ')
+            print(outputstr)
+            print('clock str: ')
+            print(clockstr)
+            print('mode str: ')
+            print(modestr)
         return ''
 
     def generateInputPBStr(inputs: list, initial_indent=2) -> str: #input is a list of dictionaries
@@ -183,7 +219,11 @@ class COFFE2VTR_NOC:
             portstr += str(input['num_pins'])
             if input['equivalent'] is not None:
                 portstr += '" equivalent="'
-                portstr += str(input['equivalent'])
+                if str.lower(str(input['equivalent'])) == 'true': #convert true to full and false to none.
+                    #assume true==full and false==none
+                    portstr += 'full'
+                else:
+                    portstr += 'none'
                 portstr += '"'
                 portstr += '/>'
             else:
@@ -196,14 +236,74 @@ class COFFE2VTR_NOC:
             finalstring += line
             finalstring += '\n'
         return finalstring
-    
-    def addIndentAtBeginning(instring: str, indents: int) -> str:
-        outstring = ''
-        for i in range(0,indents):
-            outstring += '\t'
-        outstring = outstring + instring
-        return outstring
 
+    def generateOutputPBStr(outputs: list, initial_indent=2) -> str:
+        outputstrings = []
+        indent = initial_indent
+        i = 0
+        for output in outputs:
+            portstr = ''
+            portstr += '<output name="'
+            portstr += str(output['name'])
+            portstr += '" num_pins="'
+            portstr += str(output['num_pins'])
+            if output['equivalent'] is not None:
+                portstr += '" equivalent="'
+                if str.lower(str(output['equivalent'])) == 'true': #convert true to full and false to none.
+                    #assume true==full and false==none
+                    portstr += 'full'
+                else:
+                    portstr += 'none'
+                portstr += '"'
+                portstr += '/>'
+            else:
+                portstr += '"/>'
+            outputstrings.append(portstr)
+        
+        finalstring = ''
+        for portstr in outputstrings:
+            line = COFFE2VTR_NOC.addIndentAtBeginning(portstr, indent)
+            finalstring += line
+            finalstring += '\n'
+        return finalstring
+    
+    def generateClockPBStr(clocks: list, initial_indent=2) -> str:
+        clockstrings = []
+        indent = initial_indent
+        i = 0
+        for clock in clocks:
+            portstr = ''
+            portstr += '<clock name="'
+            portstr += str(clock['name'])
+            portstr += '" num_pins="'
+            portstr += str(clock['num_pins'])
+            if clock['equivalent'] is not None:
+                portstr += '" equivalent="'
+                if str.lower(str(clock['equivalent'])) == 'true': #convert true to full and false to none.
+                    #assume true==full and false==none
+                    portstr += 'full'
+                else:
+                    portstr += 'none'
+                portstr += '"'
+                portstr += '/>'
+            else:
+                portstr += '"/>'
+            clockstrings.append(portstr)
+        
+        finalstring = ''
+        for portstr in clockstrings:
+            line = COFFE2VTR_NOC.addIndentAtBeginning(portstr, indent)
+            finalstring += line
+            finalstring += '\n'
+        return finalstring
+
+    def generateModesStr(modes: list, initial_indent=2) -> str:
+        modestr = ''
+        for i in range(0,initial_indent):
+            modestr += '\t'
+        for mode in modes:
+            modestr += mode
+        return modestr
 
 if __name__=='__main__':
     print('starting')
@@ -215,4 +315,4 @@ if __name__=='__main__':
     pbs = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
     for pb in pbs:
         # COFFE2VTR_NOC.printPB(pb)
-        COFFE2VTR_NOC.writePB_Type(pb)
+        COFFE2VTR_NOC.writePB_Type(pb, debug=True)
