@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+from xml.dom.minidom import parseString
 
 #TODO: Check for port_class at the top level. It might be a mode/submodule thing
 
@@ -189,13 +190,22 @@ class COFFE2VTR_NOC:
                 # 'pinlocations' : tile
                 # equivalent on both tile and pb
 
-    def writePB_Type(pb:dict, debug=False) -> str:
+    def generateComplexBlockListStr(pb_list, debug=False):
+        pb_types = ''
+        for pb in pb_list:
+            # COFFE2VTR_NOC.printPB(pb)
+            pb_str = COFFE2VTR_NOC.generatePB_TypeStr(pb, debug=False)
+            pb_types += '\n' + pb_str
+        return pb_types
+        
+    def generatePB_TypeStr(pb:dict, debug=False) -> str:
         opennerstr = '\t\t<pb_type name="' + pb['name'] + '">'
-        closerstr = '\t\t</pb_type>'
+        closerstr = '</pb_type>'
         inputstr = COFFE2VTR_NOC.generateInputPBStr(pb['inputs'], initial_indent=3)
         outputstr = COFFE2VTR_NOC.generateOutputPBStr(pb['outputs'], initial_indent=3)
         clockstr = COFFE2VTR_NOC.generateOutputPBStr(pb['clocks'], initial_indent=3)
         modestr = COFFE2VTR_NOC.generateModesStr(pb['modes'])
+        pbsstr = COFFE2VTR_NOC.generateSubPBStr(pb['pb_types'])
         if debug:
             print('input str: ')
             print(inputstr)
@@ -205,7 +215,10 @@ class COFFE2VTR_NOC:
             print(clockstr)
             print('mode str: ')
             print(modestr)
-        return ''
+            print('nested pb_types str:')
+            print(pbsstr)
+        finalstr = opennerstr + inputstr + outputstr + clockstr + modestr + pbsstr + closerstr
+        return finalstr
 
     def generateInputPBStr(inputs: list, initial_indent=2) -> str: #input is a list of dictionaries
         inputstrings = []
@@ -305,14 +318,51 @@ class COFFE2VTR_NOC:
             modestr += mode
         return modestr
 
+    def generateSubPBStr(pbs: list, initial_indent=2) -> str:
+        pbstr = ''
+        for i in range(0,initial_indent):
+            pbstr+='\t'
+        for pb in pbs:
+            pbstr += pb
+        return pbstr
+
+    def formatXML(xml: str):
+        dom = parseString(xml)
+        outText =  dom.toprettyxml(indent="  ", newl='\n')
+        lines = [line for line in outText.splitlines() if line.strip()]
+        outText="\n".join(lines)
+        return outText
+
+    def generateTileSetStr(pb_list, debug=False) -> str:
+        tileset = ''
+        for pb in pb_list:
+            tile_str = COFFE2VTR_NOC.generateTileStr(pb, debug=debug)
+            tileset += '\n'
+            tileset += tile_str
+    
+    #<tile>
+    #   <subtile>
+    #       <equivalent_sites> <site pb_type=something pin_mapping="direct"/>
+    
+    def generateTileStr(pb, debug=False):
+        opennerstr = '\t\t<tile name="'
+        opennerstr += pb['name']
+        opennerstr += '"'
+        if pb['area'] is not None:
+            opennerstr += ' area="' + str(pb['area']) + '"'
+        opennerstr == '>'
+        
+        closerstr = '\t\t</tile>'
+
 if __name__=='__main__':
     print('starting')
     xml_file_path = 'generated_arch.xml'
     tree = COFFE2VTR_NOC.read_xml(xml_file_path)
     # tree.write('output.xml', encoding='unicode')
-    # with open('output.xml', 'r') as file:
-    #     print(file.read())
-    pbs = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
-    for pb in pbs:
-        # COFFE2VTR_NOC.printPB(pb)
-        COFFE2VTR_NOC.writePB_Type(pb, debug=True)
+
+    pb_info = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
+    complexBlockList = COFFE2VTR_NOC.generateComplexBlockListStr(pb_info, debug=True)
+    tiles = COFFE2VTR_NOC
+    
+    with open('temp.xml', 'w+') as file:
+        file.write(complexBlockList)
