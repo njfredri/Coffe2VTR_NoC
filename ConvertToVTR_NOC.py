@@ -351,8 +351,74 @@ class COFFE2VTR_NOC:
         if pb['area'] is not None:
             opennerstr += ' area="' + str(pb['area']) + '"'
         opennerstr == '>'
+
+        #write ports
+
+        #start subtile
+        subbegin = '\t\t\t<sub_tile name="'
+        subbegin += pb['name'] + '">'
+
+        #equivalent sites
+        eq_sites = COFFE2VTR_NOC.generateEquivalentSites(pb['name'], indent=4)
+        
+        #list all ports
+        inputports = COFFE2VTR_NOC.generateTilePorts(pb['inputs'], 'input', indent = 4)
+        outputports = COFFE2VTR_NOC.generateTilePorts(pb['outputs'], 'output', indent = 4)
+        clockports = COFFE2VTR_NOC.generateTilePorts(pb['clocks'], 'clock', indent = 4)
+        #generate
+        fc = COFFE2VTR_NOC.generateFC(pb['fc'], indent=4)
+        #end subtile
+        subend = '\t\t\t</sub_tile>'
         
         closerstr = '\t\t</tile>'
+
+        tilestr = opennerstr + '\n' + subbegin + '\n' + eq_sites + '\n' + 
+
+    def generateTilePorts(ports: list, type:str, indent = 2) -> str:
+        portstrings = []
+        for port in ports:
+            pstr = '<' + type + ' name="' + port['name'] + '"'
+            pstr += ' num_pins="' + str(port['num_pins']) + '"'
+            if port['equivalent'] is not None:
+                pstr += ' equivalent="'
+                if str.lower(str(port['equivalent'])) == 'true': #convert true to full and false to none.
+                    #assume true==full and false==none
+                    pstr += 'full'
+                else:
+                    pstr += 'none'
+                pstr += '"'
+            pstr += '/>'
+            portstrings.append(pstr)
+        
+        finalstr = ''
+        for line in portstrings:
+            indentedline = COFFE2VTR_NOC.addIndentAtBeginning(line, indent)
+            finalstr += indentedline
+        return finalstr
+
+    def generateEquivalentSites(pbname:str, pinmapping='direct', indent = 3) -> str:
+        esstr = '<equivalent_sites>'
+        esstr = COFFE2VTR_NOC.addIndentAtBeginning(esstr, indent)
+        sitestr = '<site pb_type="' + pbname + '" pin_mapping="' + pinmapping + '"/>'
+        sitestr = COFFE2VTR_NOC.addIndentAtBeginning(sitestr, indent+1)
+        endstr = '</equivalent_sites>'
+        endstr = COFFE2VTR_NOC.addIndentAtBeginning(endstr, indent)
+        finalstr = esstr + sitestr + endstr
+        return finalstr
+
+    def generateFC(fc: dict, indent=3):
+        fcstr = '<fc in_type="'
+        fcstr = COFFE2VTR_NOC.addIndentAtBeginning(fcstr, indent)
+        intype = fc['default_in_type']
+        inval = str(fc['default_in_val'])
+        outtype = fc['default_out_type']
+        outval = str(fc['default_out_val'])
+        fcstr += intype + '" in_val="' + inval + '"'
+        fcstr += ' out_type="' + outtype + '" out_val="' + outval + '"/>'
+        return fcstr
+
+    def generatePinLocations(pinlocs: dict, indent = 3) -> str:
+        
 
 if __name__=='__main__':
     print('starting')
