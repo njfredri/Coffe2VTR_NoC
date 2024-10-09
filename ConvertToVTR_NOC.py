@@ -230,7 +230,7 @@ class COFFE2VTR_NOC:
         closerstr = '</pb_type>'
         inputstr = COFFE2VTR_NOC.generateInputPBStr(pb['inputs'], initial_indent=3)
         outputstr = COFFE2VTR_NOC.generateOutputPBStr(pb['outputs'], initial_indent=3)
-        clockstr = COFFE2VTR_NOC.generateOutputPBStr(pb['clocks'], initial_indent=3)
+        clockstr = COFFE2VTR_NOC.generateClockPBStr(pb['clocks'], initial_indent=3)
         modestr = COFFE2VTR_NOC.generateModesStr(pb['modes'])
         pbsstr = COFFE2VTR_NOC.generateSubPBStr(pb['pb_types'])
         interconnectstr = pb['interconnect']
@@ -420,14 +420,14 @@ class COFFE2VTR_NOC:
         for port in ports:
             pstr = '<' + type + ' name="' + port['name'] + '"'
             pstr += ' num_pins="' + str(port['num_pins']) + '"'
-            # if port['equivalent'] is not None:
-            #     pstr += ' equivalent="'
-            #     if str.lower(str(port['equivalent'])) == 'true': #convert true to full and false to none.
-            #         #assume true==full and false==none
-            #         pstr += 'full'
-            #     else:
-            #         pstr += 'none'
-            #     pstr += '"'
+            if port['equivalent'] is not None and str(port['num_pins'] != '1'):
+                pstr += ' equivalent="'
+                if str.lower(str(port['equivalent'])) == 'true': #convert true to full and false to none.
+                    #assume true==full and false==none
+                    pstr += 'full'
+                else:
+                    pstr += 'none'
+                pstr += '"'
             pstr += '/>'
             portstrings.append(pstr)
         
@@ -477,7 +477,9 @@ class COFFE2VTR_NOC:
             return pins
 
     def miscCleanup(xml):
-        xml.replace('"1" equivalent="false"', '"1"')
+        xml = xml.replace('"1" equivalent="false"', '"1"')
+        xml = xml.replace('"1" equivalent="true"', '"1"')
+        xml = xml.replace('output name="out_routing" num_pins="2" equivalent="true"', 'output name="out_routing" num_pins="2"')
         return xml
 
 if __name__=='__main__':
@@ -493,6 +495,9 @@ if __name__=='__main__':
     # print(tiles)
     filestr = '<architecture>\n' + tiles + complexBlockList + misc + '\n</architecture>'
     filestr = COFFE2VTR_NOC.miscCleanup(filestr)
+
+    # unneededequ = filestr.count('"1" equivalent="false"')
+    # print(unneededequ)
     with open('temp.xml', 'w+') as file:
         dom = parseString(filestr)
         pretty_file = dom.toprettyxml(indent='   ')

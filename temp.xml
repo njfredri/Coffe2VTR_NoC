@@ -23,20 +23,20 @@
             <equivalent_sites>
                <site pb_type="clb" pin_mapping="direct"/>
             </equivalent_sites>
-            <input name="I1" num_pins="10"/>
-            <input name="I2" num_pins="10"/>
-            <input name="I3" num_pins="10"/>
-            <input name="I4" num_pins="10"/>
-            <output name="O1" num_pins="2"/>
-            <output name="O2" num_pins="2"/>
-            <output name="O3" num_pins="2"/>
-            <output name="O4" num_pins="2"/>
-            <output name="O5" num_pins="2"/>
-            <output name="O6" num_pins="2"/>
-            <output name="O7" num_pins="2"/>
-            <output name="O8" num_pins="2"/>
-            <output name="O9" num_pins="2"/>
-            <output name="O10" num_pins="2"/>
+            <input name="I1" num_pins="10" equivalent="full"/>
+            <input name="I2" num_pins="10" equivalent="full"/>
+            <input name="I3" num_pins="10" equivalent="full"/>
+            <input name="I4" num_pins="10" equivalent="full"/>
+            <output name="O1" num_pins="2" equivalent="full"/>
+            <output name="O2" num_pins="2" equivalent="full"/>
+            <output name="O3" num_pins="2" equivalent="full"/>
+            <output name="O4" num_pins="2" equivalent="full"/>
+            <output name="O5" num_pins="2" equivalent="full"/>
+            <output name="O6" num_pins="2" equivalent="full"/>
+            <output name="O7" num_pins="2" equivalent="full"/>
+            <output name="O8" num_pins="2" equivalent="full"/>
+            <output name="O9" num_pins="2" equivalent="full"/>
+            <output name="O10" num_pins="2" equivalent="full"/>
             <clock name="clk" num_pins="1"/>
             <fc in_type="frac" in_val="0.2" out_type="frac" out_val="0.025"/>
             <pinlocations pattern="custom">
@@ -78,7 +78,7 @@
       <pb_type name="io">
          <input name="outpad" num_pins="1"/>
          <output name="inpad" num_pins="1"/>
-         <output name="clock" num_pins="1"/>
+         <clock name="clock" num_pins="1"/>
          <mode name="inpad">
             <pb_type name="inpad" blif_model=".input" num_pb="1">
                <output name="inpad" num_pins="1"/>
@@ -115,7 +115,7 @@
          <output name="O8" num_pins="2" equivalent="full"/>
          <output name="O9" num_pins="2" equivalent="full"/>
          <output name="O10" num_pins="2" equivalent="full"/>
-         <output name="clk" num_pins="1"/>
+         <clock name="clk" num_pins="1"/>
          <pb_type name="ble6" num_pb="10">
             <input name="in_A" num_pins="1"/>
             <input name="in_B" num_pins="1"/>
@@ -124,7 +124,7 @@
             <input name="in_E" num_pins="1"/>
             <input name="in_F" num_pins="1"/>
             <output name="out_local" num_pins="1"/>
-            <output name="out_routing" num_pins="2" equivalent="true"/>
+            <output name="out_routing" num_pins="2"/>
             <clock name="clk" num_pins="1"/>
             <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
                <input name="in" num_pins="6" port_class="lut_in"/>
@@ -340,7 +340,7 @@
          <input name="we1" num_pins="1"/>
          <input name="we2" num_pins="1"/>
          <output name="out" num_pins="32"/>
-         <output name="clk" num_pins="1"/>
+         <clock name="clk" num_pins="1"/>
          <mode name="mem_1024.0x32_sp">
             <pb_type name="mem_1024.0x32_sp" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
                <input name="addr" num_pins="9" port_class="address"/>
