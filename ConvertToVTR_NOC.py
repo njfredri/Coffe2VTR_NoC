@@ -38,7 +38,8 @@ class COFFE2VTR_NOC:
                 'modes' : [],
                 'pb_types': [],
                 'fc' : {},
-                'pinlocations' : {}
+                'pinlocations' : {},
+                'interconnect' : ''
             }
             debug = False
             if(debug):
@@ -80,6 +81,10 @@ class COFFE2VTR_NOC:
             if(debug):
                 print('\nAfter pinlocations:')
                 COFFE2VTR_NOC.printPB(pbinfo)
+            
+            #get interconnects
+            pbinfo['interconnect'] = COFFE2VTR_NOC.extractInterconnects(pb, debug=False)
+            
             pbs.append(pbinfo)
         return pbs
 
@@ -171,6 +176,28 @@ class COFFE2VTR_NOC:
             return data
         return None
 
+    def extractInterconnects(pb, debug=False):
+        interconnects = pb.find('interconnect')
+        if(interconnects != None):
+            interconnectstr = ET.tostring(interconnects, encoding='unicode')
+            return interconnectstr
+        return ''
+
+    def extractMiscInfoAsStr(tree: ET, debug=False) -> str:
+        root = tree.getroot()
+        models = root.find('models')
+        modelstr = ET.tostring(models, encoding='unicode')
+        layout = root.find('layout')
+        layoutstr = ET.tostring(layout, encoding='unicode')
+        device = root.find('device')
+        devicestr = ET.tostring(device, encoding='unicode')
+        switchlist = root.find('switchlist')
+        switchliststr = ET.tostring(switchlist, encoding='unicode')
+        segmentlist = root.find('segmentlist')
+        segmentliststr = ET.tostring(segmentlist, encoding='unicode')
+        finalstr = modelstr + '\n' + layoutstr + '\n' + devicestr  + '\n' + switchliststr + '\n' + segmentliststr
+        return finalstr
+        
     def addIndentAtBeginning(instring: str, indents: int) -> str:
         outstring = ''
         for i in range(0,indents):
@@ -191,12 +218,12 @@ class COFFE2VTR_NOC:
                 # equivalent on both tile and pb
 
     def generateComplexBlockListStr(pb_list, debug=False):
-        pb_types = ''
+        pb_types = '<complexblocklist>'
         for pb in pb_list:
             # COFFE2VTR_NOC.printPB(pb)
             pb_str = COFFE2VTR_NOC.generatePB_TypeStr(pb, debug=False)
             pb_types += '\n' + pb_str
-        return pb_types
+        return pb_types+'</complexblocklist>'
         
     def generatePB_TypeStr(pb:dict, debug=False) -> str:
         opennerstr = '\t\t<pb_type name="' + pb['name'] + '">'
@@ -206,6 +233,7 @@ class COFFE2VTR_NOC:
         clockstr = COFFE2VTR_NOC.generateOutputPBStr(pb['clocks'], initial_indent=3)
         modestr = COFFE2VTR_NOC.generateModesStr(pb['modes'])
         pbsstr = COFFE2VTR_NOC.generateSubPBStr(pb['pb_types'])
+        interconnectstr = pb['interconnect']
         if debug:
             print('input str: ')
             print(inputstr)
@@ -217,7 +245,7 @@ class COFFE2VTR_NOC:
             print(modestr)
             print('nested pb_types str:')
             print(pbsstr)
-        finalstr = opennerstr + inputstr + outputstr + clockstr + modestr + pbsstr + closerstr
+        finalstr = opennerstr + inputstr + outputstr + clockstr + modestr + pbsstr + interconnectstr + closerstr
         return finalstr
 
     def generateInputPBStr(inputs: list, initial_indent=2) -> str: #input is a list of dictionaries
@@ -334,29 +362,37 @@ class COFFE2VTR_NOC:
         return outText
 
     def generateTileSetStr(pb_list, debug=False) -> str:
-        tileset = ''
+        tileset = '\t\t<tiles>\n'
         for pb in pb_list:
             tile_str = COFFE2VTR_NOC.generateTileStr(pb, debug=debug)
             tileset += '\n'
             tileset += tile_str
+        tileset += '\n\t\t</tiles>'
+        return tileset
     
     #<tile>
     #   <subtile>
     #       <equivalent_sites> <site pb_type=something pin_mapping="direct"/>
     
     def generateTileStr(pb, debug=False):
-        opennerstr = '\t\t<tile name="'
+        opennerstr = '\t\t\t<tile name="'
         opennerstr += pb['name']
         opennerstr += '"'
         if pb['area'] is not None:
             opennerstr += ' area="' + str(pb['area']) + '"'
-        opennerstr == '>'
+        opennerstr += '>'
 
         #write ports
 
         #start subtile
         subbegin = '\t\t\t<sub_tile name="'
-        subbegin += pb['name'] + '">'
+        subbegin += pb['name'] + '"'
+        if pb['capacity'] != None and str(pb['capacity']) != '0':
+            subbegin += ' capacity="'
+            subbegin += str(pb['capacity'])
+            subbegin += '"'
+        subbegin += '>'
+        print(subbegin)
 
         #equivalent sites
         eq_sites = COFFE2VTR_NOC.generateEquivalentSites(pb['name'], indent=4)
@@ -367,33 +403,38 @@ class COFFE2VTR_NOC:
         clockports = COFFE2VTR_NOC.generateTilePorts(pb['clocks'], 'clock', indent = 4)
         #generate
         fc = COFFE2VTR_NOC.generateFC(pb['fc'], indent=4)
+        #add pin location
+        pinlocations = COFFE2VTR_NOC.generatePinLocations(pb['pinlocations'], indent=4)
         #end subtile
         subend = '\t\t\t</sub_tile>'
         
         closerstr = '\t\t</tile>'
 
-        tilestr = opennerstr + '\n' + subbegin + '\n' + eq_sites + '\n' + 
+        tilestr = opennerstr + '\n' + subbegin + '\n' + eq_sites + '\n'
+        tilestr += inputports + '\n' + outputports + '\n' + clockports + '\n'
+        tilestr += fc + '\n' + pinlocations + '\n' + subend + '\n' + closerstr
+        return tilestr
 
     def generateTilePorts(ports: list, type:str, indent = 2) -> str:
         portstrings = []
         for port in ports:
             pstr = '<' + type + ' name="' + port['name'] + '"'
             pstr += ' num_pins="' + str(port['num_pins']) + '"'
-            if port['equivalent'] is not None:
-                pstr += ' equivalent="'
-                if str.lower(str(port['equivalent'])) == 'true': #convert true to full and false to none.
-                    #assume true==full and false==none
-                    pstr += 'full'
-                else:
-                    pstr += 'none'
-                pstr += '"'
+            # if port['equivalent'] is not None:
+            #     pstr += ' equivalent="'
+            #     if str.lower(str(port['equivalent'])) == 'true': #convert true to full and false to none.
+            #         #assume true==full and false==none
+            #         pstr += 'full'
+            #     else:
+            #         pstr += 'none'
+            #     pstr += '"'
             pstr += '/>'
             portstrings.append(pstr)
         
         finalstr = ''
         for line in portstrings:
             indentedline = COFFE2VTR_NOC.addIndentAtBeginning(line, indent)
-            finalstr += indentedline
+            finalstr += '\n' + indentedline
         return finalstr
 
     def generateEquivalentSites(pbname:str, pinmapping='direct', indent = 3) -> str:
@@ -403,7 +444,7 @@ class COFFE2VTR_NOC:
         sitestr = COFFE2VTR_NOC.addIndentAtBeginning(sitestr, indent+1)
         endstr = '</equivalent_sites>'
         endstr = COFFE2VTR_NOC.addIndentAtBeginning(endstr, indent)
-        finalstr = esstr + sitestr + endstr
+        finalstr = esstr + '\n' + sitestr + '\n' + endstr
         return finalstr
 
     def generateFC(fc: dict, indent=3):
@@ -418,17 +459,43 @@ class COFFE2VTR_NOC:
         return fcstr
 
     def generatePinLocations(pinlocs: dict, indent = 3) -> str:
-        
+        if pinlocs['pattern'] != 'custom':
+            pinlocstr = '<pinlocations pattern="' + pinlocs['pattern'] + '"/>'
+            pinlocstr = COFFE2VTR_NOC.addIndentAtBeginning(pinlocstr, indent)
+            return pinlocstr
+        else:
+            pins = COFFE2VTR_NOC.addIndentAtBeginning('<pinlocations pattern="custom">', indent)
+            for loc in pinlocs['locations']:
+                locstr = '<loc side="' + loc['side'] + '">'
+                locpins = ''
+                for pin in loc['pins']:
+                    locpins += ' ' + str(pin)
+                locstr += locpins + '</loc>'
+                locstr = COFFE2VTR_NOC.addIndentAtBeginning(locstr, indent + 1)
+                pins += '\n' + locstr
+            pins += '\n' + COFFE2VTR_NOC.addIndentAtBeginning('</pinlocations>', indent)
+            return pins
+
+    def miscCleanup(xml):
+        xml.replace('"1" equivalent="false"', '"1"')
+        return xml
 
 if __name__=='__main__':
     print('starting')
     xml_file_path = 'generated_arch.xml'
     tree = COFFE2VTR_NOC.read_xml(xml_file_path)
     # tree.write('output.xml', encoding='unicode')
-
+    models = tree.find('models')
     pb_info = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
     complexBlockList = COFFE2VTR_NOC.generateComplexBlockListStr(pb_info, debug=True)
-    tiles = COFFE2VTR_NOC
-    
+    tiles = COFFE2VTR_NOC.generateTileSetStr(pb_info, debug=True)
+    misc = COFFE2VTR_NOC.extractMiscInfoAsStr(tree, debug=False)
+    # print(tiles)
+    filestr = '<architecture>\n' + tiles + complexBlockList + misc + '\n</architecture>'
+    filestr = COFFE2VTR_NOC.miscCleanup(filestr)
     with open('temp.xml', 'w+') as file:
-        file.write(complexBlockList)
+        dom = parseString(filestr)
+        pretty_file = dom.toprettyxml(indent='   ')
+        lines = pretty_file.splitlines()
+        formatted_lines = [line for line in lines if line.strip() != ""]
+        file.write('\n'.join(formatted_lines))
