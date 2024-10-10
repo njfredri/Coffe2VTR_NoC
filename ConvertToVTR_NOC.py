@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 from xml.dom.minidom import parseString
+import re
 
 #TODO: Check for port_class at the top level. It might be a mode/submodule thing
 
@@ -476,11 +477,30 @@ class COFFE2VTR_NOC:
             pins += '\n' + COFFE2VTR_NOC.addIndentAtBeginning('</pinlocations>', indent)
             return pins
 
+    def remove_decimal_zero(input_string):
+        # Use regex to replace '.0' that is followed by 'x' or '_'
+        result = re.sub(r'\.0(?=[x_])', '', input_string)
+        return result
+
     def miscCleanup(xml):
         xml = xml.replace('"1" equivalent="false"', '"1"')
         xml = xml.replace('"1" equivalent="true"', '"1"')
         xml = xml.replace('output name="out_routing" num_pins="2" equivalent="true"', 'output name="out_routing" num_pins="2"')
+        # xml = COFFE2VTR_NOC.remove_decimal_zero(xml)
         return xml
+    
+    # def remove_decimal_zero_from_memory(input_string):
+    #     # Define a regex pattern to match the strings
+    #     pattern = r"(\bmem_\d+\.0x\d+_sp\b)"
+        
+    #     # Replace '.0' with '' in the matched strings
+    #     result = re.sub(pattern, r'\1\2', input_string)
+        
+    #     return result
+
+
+
+
 
 if __name__=='__main__':
     print('starting')
@@ -504,3 +524,9 @@ if __name__=='__main__':
         lines = pretty_file.splitlines()
         formatted_lines = [line for line in lines if line.strip() != ""]
         file.write('\n'.join(formatted_lines))
+    
+    # Example usage
+    input_string = "This is a test.0 string with some .0words and .0symbols!"
+    # output_string = remove_decimal_zero(input_string)
+
+    # print(output_string) 
