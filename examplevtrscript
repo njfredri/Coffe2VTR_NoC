@@ -1,0 +1,22 @@
+#synthesize
+export VTR_ROOT="/home/lab444/tools/OpenFPGA/vtr-verilog-to-routing"
+# $VTR_ROOT/odin_ii/odin_ii -a ./custom_arch.xml -V ./counter.v -o counter.odin.blif --debug_parser
+
+# #optimize with ABC
+# $VTR_ROOT/abc/abc -c 'read counter.odin.blif; if -K 6; write_hie counter.odin.blif counter.abc_no_clock.blif'
+
+# #re-insert clocks
+# $VTR_ROOT/vtr_flow/scripts/restore_multiclock_latch.pl counter.odin.blif counter.abc_no_clock.blif counter.pre-vpr.blif
+
+# echo clocks reinserted
+
+# # #place and route onto the architecture
+# $VTR_ROOT/vpr/vpr $VTR_ROOT/vtr_flow/arch/xilinx/simple-7series.xml counter --circuit_file counter.pre-vpr.blif --route_chan_width 100
+# # $VTR_ROOT/vpr/vpr $VTR_ROOT/vtr_flow/arch/common/arch.xml counter --circuit_file counter.pre-vpr.blif --route_chan_width 100 --analysis --disp on
+
+$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py \
+./counter.v \
+./custom_arch.xml \
+-temp_dir ./temp \
+--route_chan_width 100 \
+-starting_stage odin
