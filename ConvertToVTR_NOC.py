@@ -486,7 +486,13 @@ class COFFE2VTR_NOC:
         xml = xml.replace('"1" equivalent="false"', '"1"')
         xml = xml.replace('"1" equivalent="true"', '"1"')
         xml = xml.replace('output name="out_routing" num_pins="2" equivalent="true"', 'output name="out_routing" num_pins="2"')
-        # xml = COFFE2VTR_NOC.remove_decimal_zero(xml)
+        
+        #Code below was commented out. The changes should be made in COFFE instead.
+        #get rid of all the .0 pins in input and output
+        # xml = xml.replace('.0]"', ']"')
+        # xml = xml.replace('.0:0]"', ':0]"')
+        # #replace .0" in num_pins. Must assume 
+        # xml = xml.replace('.0" port_class', '" port_class')
         return xml
     
     # def remove_decimal_zero_from_memory(input_string):
@@ -504,7 +510,7 @@ class COFFE2VTR_NOC:
 
 if __name__=='__main__':
     print('starting')
-    xml_file_path = 'generated_arch.xml'
+    xml_file_path = 'generated_arch2.xml'
     tree = COFFE2VTR_NOC.read_xml(xml_file_path)
     # tree.write('output.xml', encoding='unicode')
     models = tree.find('models')
