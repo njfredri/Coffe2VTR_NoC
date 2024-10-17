@@ -510,7 +510,7 @@ class COFFE2VTR_NOC:
 
 if __name__=='__main__':
     print('starting')
-    xml_file_path = 'generated_arch2.xml'
+    xml_file_path = 'generated_arch3.xml'
     tree = COFFE2VTR_NOC.read_xml(xml_file_path)
     # tree.write('output.xml', encoding='unicode')
     models = tree.find('models')
