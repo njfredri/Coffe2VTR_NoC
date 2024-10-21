@@ -7,7 +7,6 @@ import re
 class COFFE2VTR_NOC:
     def read_xml(xmlfile):
         tree = ET.parse(xmlfile)
-        # tree.getroot().
         return tree
 
     def printPB(pb: dict):
@@ -23,6 +22,13 @@ class COFFE2VTR_NOC:
         print('\tfc: ' + str(pb['fc']))
         print('\tpinlocations' + str(pb['pinlocations']))
         print('}')
+
+    def addIndentAtBeginning(instring: str, indents: int) -> str:
+        outstring = ''
+        for i in range(0,indents):
+            outstring += '\t'
+        outstring = outstring + instring
+        return outstring
     
     def extractComplexBlockInfo(archtree:ET, debug=False):
         root = archtree.getroot()
@@ -199,29 +205,16 @@ class COFFE2VTR_NOC:
         finalstr = modelstr + '\n' + layoutstr + '\n' + devicestr  + '\n' + switchliststr + '\n' + segmentliststr
         return finalstr
         
-    def addIndentAtBeginning(instring: str, indents: int) -> str:
-        outstring = ''
-        for i in range(0,indents):
-            outstring += '\t'
-        outstring = outstring + instring
-        return outstring
-
-                # 'name': pb and tile
-                # 'capacity' : tile
-                # 'area' : tile
-                # 'inputs' : pb and tile
-                # 'outputs' : pb and tile
-                # 'clocks' : pb and tile
-                # 'modes' : pb
-                # 'pb_types': pb
-                # 'fc' : tile
-                # 'pinlocations' : tile
-                # equivalent on both tile and pb
+    def formatXML(xml: str):
+        dom = parseString(xml)
+        outText =  dom.toprettyxml(indent="  ", newl='\n')
+        lines = [line for line in outText.splitlines() if line.strip()]
+        outText="\n".join(lines)
+        return outText
 
     def generateComplexBlockListStr(pb_list, debug=False):
         pb_types = '<complexblocklist>'
         for pb in pb_list:
-            # COFFE2VTR_NOC.printPB(pb)
             pb_str = COFFE2VTR_NOC.generatePB_TypeStr(pb, debug=False)
             pb_types += '\n' + pb_str
         return pb_types+'</complexblocklist>'
@@ -355,13 +348,6 @@ class COFFE2VTR_NOC:
             pbstr += pb
         return pbstr
 
-    def formatXML(xml: str):
-        dom = parseString(xml)
-        outText =  dom.toprettyxml(indent="  ", newl='\n')
-        lines = [line for line in outText.splitlines() if line.strip()]
-        outText="\n".join(lines)
-        return outText
-
     def generateTileSetStr(pb_list, debug=False) -> str:
         tileset = '\t\t<tiles>\n'
         for pb in pb_list:
@@ -371,10 +357,6 @@ class COFFE2VTR_NOC:
         tileset += '\n\t\t</tiles>'
         return tileset
     
-    #<tile>
-    #   <subtile>
-    #       <equivalent_sites> <site pb_type=something pin_mapping="direct"/>
-    
     def generateTileStr(pb, debug=False):
         opennerstr = '\t\t\t<tile name="'
         opennerstr += pb['name']
@@ -382,9 +364,6 @@ class COFFE2VTR_NOC:
         if pb['area'] is not None:
             opennerstr += ' area="' + str(pb['area']) + '"'
         opennerstr += '>'
-
-        #write ports
-
         #start subtile
         subbegin = '\t\t\t<sub_tile name="'
         subbegin += pb['name'] + '"'
@@ -477,11 +456,6 @@ class COFFE2VTR_NOC:
             pins += '\n' + COFFE2VTR_NOC.addIndentAtBeginning('</pinlocations>', indent)
             return pins
 
-    def remove_decimal_zero(input_string):
-        # Use regex to replace '.0' that is followed by 'x' or '_'
-        result = re.sub(r'\.0(?=[x_])', '', input_string)
-        return result
-
     def miscCleanup(xml):
         xml = xml.replace('"1" equivalent="false"', '"1"')
         xml = xml.replace('"1" equivalent="true"', '"1"')
@@ -494,36 +468,19 @@ class COFFE2VTR_NOC:
         # #replace .0" in num_pins. Must assume 
         # xml = xml.replace('.0" port_class', '" port_class')
         return xml
-    
-    # def remove_decimal_zero_from_memory(input_string):
-    #     # Define a regex pattern to match the strings
-    #     pattern = r"(\bmem_\d+\.0x\d+_sp\b)"
-        
-    #     # Replace '.0' with '' in the matched strings
-    #     result = re.sub(pattern, r'\1\2', input_string)
-        
-    #     return result
-
-
-
 
 
 if __name__=='__main__':
-    print('starting')
     xml_file_path = 'generated_arch3.xml'
     tree = COFFE2VTR_NOC.read_xml(xml_file_path)
-    # tree.write('output.xml', encoding='unicode')
     models = tree.find('models')
     pb_info = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
     complexBlockList = COFFE2VTR_NOC.generateComplexBlockListStr(pb_info, debug=True)
     tiles = COFFE2VTR_NOC.generateTileSetStr(pb_info, debug=True)
     misc = COFFE2VTR_NOC.extractMiscInfoAsStr(tree, debug=False)
-    # print(tiles)
     filestr = '<architecture>\n' + tiles + complexBlockList + misc + '\n</architecture>'
     filestr = COFFE2VTR_NOC.miscCleanup(filestr)
 
-    # unneededequ = filestr.count('"1" equivalent="false"')
-    # print(unneededequ)
     with open('temp.xml', 'w+') as file:
         dom = parseString(filestr)
         pretty_file = dom.toprettyxml(indent='   ')
@@ -531,8 +488,3 @@ if __name__=='__main__':
         formatted_lines = [line for line in lines if line.strip() != ""]
         file.write('\n'.join(formatted_lines))
     
-    # Example usage
-    input_string = "This is a test.0 string with some .0words and .0symbols!"
-    # output_string = remove_decimal_zero(input_string)
-
-    # print(output_string) 
