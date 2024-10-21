@@ -372,7 +372,6 @@ class COFFE2VTR_NOC:
             subbegin += str(pb['capacity'])
             subbegin += '"'
         subbegin += '>'
-        print(subbegin)
 
         #equivalent sites
         eq_sites = COFFE2VTR_NOC.generateEquivalentSites(pb['name'], indent=4)
@@ -480,7 +479,7 @@ if __name__=='__main__':
         pb_info = COFFE2VTR_NOC.extractComplexBlockInfo(tree)
         complexBlockList = COFFE2VTR_NOC.generateComplexBlockListStr(pb_info)
         tiles = COFFE2VTR_NOC.generateTileSetStr(pb_info)
-        misc = COFFE2VTR_NOC.extractMiscInfo(tree)
+        misc = COFFE2VTR_NOC.extractMiscInfoAsStr(tree)
         filestr = '<architecture>\n' + tiles + complexBlockList + misc + '\n</architecture>'
         filestr = COFFE2VTR_NOC.miscCleanup(filestr)
 
