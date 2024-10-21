@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from xml.dom.minidom import parseString
-import re
+import sys
 
 #TODO: Check for port_class at the top level. It might be a mode/submodule thing
 
@@ -471,20 +471,22 @@ class COFFE2VTR_NOC:
 
 
 if __name__=='__main__':
-    xml_file_path = 'generated_arch3.xml'
-    tree = COFFE2VTR_NOC.read_xml(xml_file_path)
-    models = tree.find('models')
-    pb_info = COFFE2VTR_NOC.extractComplexBlockInfo(tree, debug=True)
-    complexBlockList = COFFE2VTR_NOC.generateComplexBlockListStr(pb_info, debug=True)
-    tiles = COFFE2VTR_NOC.generateTileSetStr(pb_info, debug=True)
-    misc = COFFE2VTR_NOC.extractMiscInfoAsStr(tree, debug=False)
-    filestr = '<architecture>\n' + tiles + complexBlockList + misc + '\n</architecture>'
-    filestr = COFFE2VTR_NOC.miscCleanup(filestr)
+    if len(sys.argv) != 3:
+        print("Usage: python ConvertToVTR_NOC.py <input_file> <output_file>")
+        exit()
+    else:
+        xml_file_path = sys.argv[1]
+        tree = COFFE2VTR_NOC.read_xml(xml_file_path)
+        pb_info = COFFE2VTR_NOC.extractComplexBlockInfo(tree)
+        complexBlockList = COFFE2VTR_NOC.generateComplexBlockListStr(pb_info)
+        tiles = COFFE2VTR_NOC.generateTileSetStr(pb_info)
+        misc = COFFE2VTR_NOC.extractMiscInfo(tree)
+        filestr = '<architecture>\n' + tiles + complexBlockList + misc + '\n</architecture>'
+        filestr = COFFE2VTR_NOC.miscCleanup(filestr)
 
-    with open('temp.xml', 'w+') as file:
-        dom = parseString(filestr)
-        pretty_file = dom.toprettyxml(indent='   ')
-        lines = pretty_file.splitlines()
-        formatted_lines = [line for line in lines if line.strip() != ""]
-        file.write('\n'.join(formatted_lines))
-    
+        with open(sys.argv[2], 'w+') as file:
+            dom = parseString(filestr)
+            pretty_file = dom.toprettyxml(indent='   ')
+            lines = pretty_file.splitlines()
+            formatted_lines = [line for line in lines if line.strip() != '']
+            file.write('\n'.join(formatted_lines))
